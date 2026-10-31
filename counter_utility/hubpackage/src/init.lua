@@ -17,7 +17,8 @@
   Edge utility device driver - track switch on duration and increment/decrement counter
 
 
-  Modified by Taeseok Yi, 2026: profile names changed to edgeutil.v1c / edgeutil_count.v1c.
+  Modified by Taeseok Yi, 2026: profile names changed to edgeutil.v1c / edgeutil_count.v1c;
+  device:online() added in device_init/device_added so health recovers after hub reconnect.
 --]]
 
 -- Edge libraries
@@ -325,6 +326,7 @@ local function device_init(driver, device)
   end
 
   initialized = true
+  device:online()
 end
 
 
@@ -341,6 +343,7 @@ local function device_added (driver, device)
   device:set_field('pauseTime', 0, {persist = true})
   device:set_field('baseTime', nil, {persist = true})
   device:set_field('lastcmd', 'off')
+  device:online()
 
 end
 
