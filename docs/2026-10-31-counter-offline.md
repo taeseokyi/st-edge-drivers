@@ -26,8 +26,8 @@
 |---|---|---|---|
 | Counter Utility | Edge Counter Utility V1.1 (Todd) → 본인 V1 `af200fb2` (10-31 전환) | Todd → Tsyi | OFFLINE → ONLINE |
 | 야간차단 | 위와 동일 | Todd → Tsyi | OFFLINE → ONLINE |
-| Counter Utility 1 | Edge Counter Utility V1 `af200fb2` (본인) | Tsyi | OFFLINE → ONLINE |
-| 야간 차단1 | 위와 동일 | Tsyi | OFFLINE → ONLINE |
+| Counter Utility 1 | Edge Counter Utility V1 `af200fb2` (본인) | Tsyi | OFFLINE → ONLINE → 10-31 삭제 |
+| 야간 차단1 | 위와 동일 | Tsyi | OFFLINE → ONLINE → 10-31 삭제 |
 | Web Req Multi Master | Web Requestor Multi v1.2 (Todd) | Todd | ONLINE |
 | 경도측정 / 수조온도측정 | Web Requestor Multi-Auto v1.4 `3d6b5cf9` (본인) | Tsyi | ONLINE |
 
@@ -38,7 +38,7 @@
 
 ## 해결 결과 (2026-10-31 처리 완료)
 
-카운터 기기 4개 모두 ONLINE 으로 복귀했고, 전부 본인 드라이버(`af200fb2`)를 쓴다.
+원본 카운터 기기 2개가 본인 드라이버(`af200fb2`)로 ONLINE 복귀했고, 복제본 2개는 삭제했다.
 
 1. **드라이버 수정**: `counter_utility/hubpackage/src/init.lua` 의 `device_init` 끝과
    `device_added` 끝에 `device:online()` 추가 (webrequestor 와 같은 패턴). 패키징
@@ -51,9 +51,16 @@
    smartthings edge:drivers:switch --hub <hubId> --driver af200fb2-8d22-4c81-b3c3-bbafb7f02198 --include-non-matching <deviceId>
    ```
 
-   Counter Utility, 야간차단 모두 전환 약 20초 뒤 ONLINE (10:44:38Z). 전환 직후 드라이버
-   init 이 switch off, contact closed 이벤트를 정상 발행했다.
-3. 프로필은 Todd 것(`edgeutil_dur.v3`)으로 남는다. `handler_driverchanged` 가 프로필을 바꾸지
+   Counter Utility, 야간차단 모두 전환 약 20초 뒤 ONLINE (10:44:38Z).
+
+   **주의: 드라이버 전환 시 `device_added` 가 다시 실행돼 상태가 초기화된다.** 전환 시각에
+   switch off, count 0, duration 0 이벤트가 한꺼번에 나왔다. 야간차단은 전환 직전
+   switch on / count 9 / duration 15 였고, Counter Utility 는 switch on / count 1 /
+   duration 10 이었다. 켜져 있어야 할 기기는 전환 뒤 다시 켜야 한다.
+3. **복제본 삭제**: Counter Utility 1, 야간 차단1 은 원본이 OFFLINE 으로 보여 10-12 에
+   같은 설정으로 만들어 둔 복제본이었다. 원본이 복귀했으므로 10-31 에 삭제했다. 삭제 전
+   확인: 생성 이후 이벤트 히스토리 없음, Rules API 참조 0건.
+4. 프로필은 Todd 것(`edgeutil_dur.v3`)으로 남는다. `handler_driverchanged` 가 프로필을 바꾸지
    않기 때문인데, 이 프로필의 main 컴포넌트 capability 는 본인 드라이버가 emit 하는 것과
    같아(이미 본인 드라이버를 쓰던 야간 차단1 도 같은 프로필) UI 와 자동화는 그대로 동작한다.
 

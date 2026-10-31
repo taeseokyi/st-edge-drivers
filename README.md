@@ -54,6 +54,8 @@ LAN 기기는 fingerprint 가 없어 앱의 드라이버 메뉴에 다른 드라
 smartthings edge:drivers:switch --hub <hubId> --driver <driverId> --include-non-matching <deviceId>
 ```
 
+전환하면 새 드라이버의 `device_added` 가 실행돼 switch/count/duration 이 초기화된다.
+
 ## 허브 로그
 
 ```
