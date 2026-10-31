@@ -1,0 +1,34 @@
+{
+    "dashboard": {
+        "states": [
+            {
+                "label": "{{dkhtext.value}}"
+            }
+        ],
+        "actions": []
+    },
+    "detailView": [
+        {
+            "label": "경도 (dKH)",
+            "displayType": "state",
+            "state": {
+                "label": "{{dkhtext.value}}"
+            }
+        }
+    ],
+    "automation": {
+        "conditions": [
+            {
+                "label": "경도 (dKH)",
+                "displayType": "numberField",
+                "numberField": {
+                    "value": "dkh.value",
+                    "valueType": "number"
+                }
+            }
+        ],
+        "actions": []
+    },
+    "id": "cleverflower44023.dkhvalue",
+    "version": 1
+}

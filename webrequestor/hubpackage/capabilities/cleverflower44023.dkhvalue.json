@@ -1,0 +1,40 @@
+{
+    "id": "cleverflower44023.dkhvalue",
+    "version": 1,
+    "status": "proposed",
+    "name": "dkhvalue",
+    "ephemeral": false,
+    "attributes": {
+        "dkh": {
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "type": "number"
+                    }
+                },
+                "additionalProperties": false,
+                "required": [
+                    "value"
+                ]
+            },
+            "enumCommands": []
+        },
+        "dkhtext": {
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false,
+                "required": [
+                    "value"
+                ]
+            },
+            "enumCommands": []
+        }
+    },
+    "commands": {}
+}

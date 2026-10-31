@@ -75,6 +75,7 @@ preferences:
         none: None
         extractstring: Extracted string value
         extractnum: Extracted numeric value
+        extractdkh: Extracted dKH value (3 decimals)
       default: extractnum
   - preferenceId: request1
     name: request1

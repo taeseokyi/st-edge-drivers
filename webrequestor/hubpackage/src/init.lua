@@ -17,7 +17,8 @@
   Web requests: execute web requests via mobile app or device command; supports http and https
 
 
-  Modified by Taeseok Yi, 2026: dashboard-specific profiles (none/string/number), keynumvalue + temperatureMeasurement events, periodic auto-refresh timer.
+  Modified by Taeseok Yi, 2026: dashboard-specific profiles (none/string/number/dKH), keynumvalue + temperatureMeasurement events,
+  dKH (carbonate hardness) dashboard mode with 3-decimal display, periodic auto-refresh timer.
 --]]
 
 -- Edge libraries
@@ -50,6 +51,8 @@ local NUMBER_DEVICEPROFILE = 'webrequestm_dashnum.v2f'
 local DEVICEADDLPROFILE = 'webrequestm_addl_dashnone.v2e'
 local STRING_DEVICEADDLPROFILE = 'webrequestm_addl_dashstr.v2e'
 local NUMBER_DEVICEADDLPROFILE = 'webrequestm_addl_dashnum.v2f'
+local DKH_DEVICEPROFILE = 'webrequestm_dashdkh.v2f'
+local DKH_DEVICEADDLPROFILE = 'webrequestm_addl_dashdkh.v2f'
 
 -- Custom capabilities
 local cap_select = capabilities["partyvoice23922.webrequestselect"]
@@ -59,6 +62,7 @@ local cap_httpcode = capabilities["partyvoice23922.httpcode"]
 local cap_response = capabilities["partyvoice23922.httpresponse"]
 local cap_keyvalue = capabilities["partyvoice23922.keyvalue2"]
 local cap_keynumvalue = capabilities["partyvoice23922.keynumvalue"]
+local cap_dkhvalue = capabilities["cleverflower44023.dkhvalue"]
 local cap_createdev = capabilities["partyvoice23922.createanother"]
 
 
@@ -312,11 +316,22 @@ local function issue_request(device, req_method, req_url, sendbody, optheaders)
             local kvalue = parser.findkeyvalue(response, device.preferences.valuekey)
             
             if kvalue ~= nil then
-              if device.preferences.dashboard ~= 'extractnum' then
-                device:emit_event(cap_keyvalue.keyvalue(tostring(kvalue)))
-              else
+              if device.preferences.dashboard == 'extractnum' then
                 device:emit_event(cap_keynumvalue.keynumvalue(tonumber(kvalue)))
                 device:emit_component_event(device.profile.components.main, capabilities.temperatureMeasurement.temperature({value=tonumber(kvalue), unit='C'}))
+              elseif device.preferences.dashboard == 'extractdkh' then
+                local num = tonumber(kvalue)
+                if num then
+                  device:emit_event(cap_dkhvalue.dkh(num))
+                  device:emit_event(cap_dkhvalue.dkhtext(string.format('%.3f dKH', num)))
+                  -- 앱 기록 그래프용: 커스텀 capability 는 그래프가 없고, 온도는 플랫폼이 1자리로 반올림,
+                  -- CO2 는 앱이 정수만 표시하므로 1000배로 발행 (7.29 dKH → 7290 ppm)
+                  device:emit_component_event(device.profile.components.main, capabilities.carbonDioxideMeasurement.carbonDioxide({value=math.floor(num*1000+0.5), unit='ppm'}))
+                else
+                  device:emit_event(cap_dkhvalue.dkhtext(tostring(kvalue)))
+                end
+              else
+                device:emit_event(cap_keyvalue.keyvalue(tostring(kvalue)))
               end
             else
               device:emit_event(cap_keyvalue.keyvalue('--', { visibility = { displayed = false } }))
@@ -605,6 +620,10 @@ local function device_added (driver, device)
 	device:emit_event(cap_keyvalue.keyvalue(' '))
   device:emit_event(cap_keynumvalue.keynumvalue(26))
   device:emit_component_event(device.profile.components.main, capabilities.temperatureMeasurement.temperature({value=26, unit='C'}))
+  if device:supports_capability_by_id('cleverflower44023.dkhvalue') then
+    device:emit_event(cap_dkhvalue.dkh(0))
+    device:emit_event(cap_dkhvalue.dkhtext('--'))
+  end
   
 end
 
@@ -758,6 +777,12 @@ local function handler_infochanged (driver, device, event, args)
           device:try_update_metadata({profile=NUMBER_DEVICEPROFILE})
         else
           device:try_update_metadata({profile=NUMBER_DEVICEADDLPROFILE})
+        end
+      elseif device.preferences.dashboard == 'extractdkh' then
+        if ismaster then
+          device:try_update_metadata({profile=DKH_DEVICEPROFILE})
+        else
+          device:try_update_metadata({profile=DKH_DEVICEADDLPROFILE})
         end
       end
     end
