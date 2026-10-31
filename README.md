@@ -47,6 +47,13 @@ smartthings edge:channels:assign <driverId> --channel <channelId>
 smartthings edge:drivers:install <driverId> --hub <hubId>
 ```
 
+LAN 기기는 fingerprint 가 없어 앱의 드라이버 메뉴에 다른 드라이버가 뜨지 않는다. 기기의
+드라이버를 바꾸려면 CLI 로 강제한다.
+
+```
+smartthings edge:drivers:switch --hub <hubId> --driver <driverId> --include-non-matching <deviceId>
+```
+
 ## 허브 로그
 
 ```

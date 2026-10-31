@@ -22,12 +22,12 @@
 
 ## 기기 ↔ 드라이버 매핑
 
-| 기기 | 드라이버 | 채널 | 헬스 |
+| 기기 | 드라이버 | 채널 | 헬스 (조사 시점 → 처리 후) |
 |---|---|---|---|
-| Counter Utility | Edge Counter Utility V1.1 (Todd) | Todd | OFFLINE |
-| 야간차단 | 위와 동일 | Todd | OFFLINE |
-| Counter Utility 1 | Edge Counter Utility V1 `af200fb2` (본인) | Tsyi | OFFLINE |
-| 야간 차단1 | 위와 동일 | Tsyi | OFFLINE |
+| Counter Utility | Edge Counter Utility V1.1 (Todd) → 본인 V1 `af200fb2` (10-31 전환) | Todd → Tsyi | OFFLINE → ONLINE |
+| 야간차단 | 위와 동일 | Todd → Tsyi | OFFLINE → ONLINE |
+| Counter Utility 1 | Edge Counter Utility V1 `af200fb2` (본인) | Tsyi | OFFLINE → ONLINE |
+| 야간 차단1 | 위와 동일 | Tsyi | OFFLINE → ONLINE |
 | Web Req Multi Master | Web Requestor Multi v1.2 (Todd) | Todd | ONLINE |
 | 경도측정 / 수조온도측정 | Web Requestor Multi-Auto v1.4 `3d6b5cf9` (본인) | Tsyi | ONLINE |
 
@@ -36,13 +36,26 @@
 - 야간차단 / 야간 차단1 은 프로필 `edgeutil_dur.v3`, Counter Utility 1 은 `edgeutil.v1c`.
 - 기기 ID, 허브 ID, 채널 ID 는 `docs/local/` (git 제외) 에 있다.
 
-## 해결 방향 (소스 수정은 사용자 결정)
+## 해결 결과 (2026-10-31 처리 완료)
 
-1. 본인 드라이버(`af200fb2`): `device_init` 끝과 `device_added` 에 `device:online()` 추가 후
-   재패키징, Tsyi Channel 에 올리면 Counter Utility 1, 야간 차단1 복귀.
-2. Todd 드라이버를 쓰는 Counter Utility, 야간차단: 앱 기기 메뉴 → 드라이버 → 본인 드라이버로
-   전환. 프로필이 달라 UI 변화 확인 필요.
-3. 수정 없는 임시책: 기기 삭제 후 재생성(새 기기는 기본 ONLINE). 다음 연결 끊김 때 재발.
+카운터 기기 4개 모두 ONLINE 으로 복귀했고, 전부 본인 드라이버(`af200fb2`)를 쓴다.
+
+1. **드라이버 수정**: `counter_utility/hubpackage/src/init.lua` 의 `device_init` 끝과
+   `device_added` 끝에 `device:online()` 추가 (webrequestor 와 같은 패턴). 패키징
+   (버전 2026-10-31T10:28:41) → Tsyi Channel 배정 → 허브 설치. 설치 약 1분 뒤
+   Counter Utility 1, 야간 차단1 이 ONLINE (10:29:33Z).
+2. **Todd 드라이버 기기 전환**: 앱의 드라이버 메뉴에는 본인 드라이버가 뜨지 않았다. LAN 기기는
+   fingerprint 가 없어 플랫폼이 "매칭 안 됨"으로 분류하기 때문이다. CLI 로 강제 전환했다.
+
+   ```
+   smartthings edge:drivers:switch --hub <hubId> --driver af200fb2-8d22-4c81-b3c3-bbafb7f02198 --include-non-matching <deviceId>
+   ```
+
+   Counter Utility, 야간차단 모두 전환 약 20초 뒤 ONLINE (10:44:38Z). 전환 직후 드라이버
+   init 이 switch off, contact closed 이벤트를 정상 발행했다.
+3. 프로필은 Todd 것(`edgeutil_dur.v3`)으로 남는다. `handler_driverchanged` 가 프로필을 바꾸지
+   않기 때문인데, 이 프로필의 main 컴포넌트 capability 는 본인 드라이버가 emit 하는 것과
+   같아(이미 본인 드라이버를 쓰던 야간 차단1 도 같은 프로필) UI 와 자동화는 그대로 동작한다.
 
 ## 허브 로그
 
