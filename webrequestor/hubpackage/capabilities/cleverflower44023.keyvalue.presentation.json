@@ -1,0 +1,34 @@
+{
+    "dashboard": {
+        "states": [
+            {
+                "label": "{{keyvalue.value}}"
+            }
+        ],
+        "actions": []
+    },
+    "detailView": [
+        {
+            "label": "{{i18n.label}}",
+            "displayType": "state",
+            "state": {
+                "label": "{{keyvalue.value}}"
+            }
+        }
+    ],
+    "automation": {
+        "conditions": [
+            {
+                "label": "Extracted key String value",
+                "displayType": "textField",
+                "textField": {
+                    "value": "keyvalue.value",
+                    "valueType": "string"
+                }
+            }
+        ],
+        "actions": []
+    },
+    "id": "cleverflower44023.keyvalue2",
+    "version": 1
+}

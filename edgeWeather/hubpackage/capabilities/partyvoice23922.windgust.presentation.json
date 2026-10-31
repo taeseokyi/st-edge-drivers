@@ -1,0 +1,45 @@
+{
+    "dashboard": {
+        "states": [
+            {
+                "label": "{{windgust.value}}{{windgust.unit}}"
+            }
+        ],
+        "actions": []
+    },
+    "detailView": [
+        {
+            "label": "{{i18n.label}}",
+            "displayType": "slider",
+            "slider": {
+                "range": [
+                    0,
+                    80
+                ],
+                "unit": "windgust.unit",
+                "value": "windgust.value",
+                "valueType": "number"
+            }
+        }
+    ],
+    "automation": {
+        "conditions": [
+            {
+                "label": "Wind Speed",
+                "displayType": "numberField",
+                "numberField": {
+                    "value": "windgust.value",
+                    "valueType": "number",
+                    "unit": "windgust.unit",
+                    "range": [
+                        0,
+                        80
+                    ]
+                }
+            }
+        ],
+        "actions": []
+    },
+    "id": "partyvoice23922.windgust",
+    "version": 1
+}

@@ -1,0 +1,6 @@
+.env
+*.zip
+.DS_Store
+__pycache__/
+docs/local/
+*.local.md

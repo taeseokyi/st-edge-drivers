@@ -1,0 +1,7 @@
+# Modified by Taeseok Yi, 2026: driver name and packageKey changed (original: Todd Austin, Apache 2.0)
+name: 'Tsyi Edge Weather V1'
+packageKey: 'tsyi_edgeWeather_V1'
+description: 'Hello World'
+permissions:
+    lan: {}
+    discovery: {}

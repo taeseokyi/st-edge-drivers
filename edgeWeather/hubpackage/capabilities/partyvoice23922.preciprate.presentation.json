@@ -1,0 +1,40 @@
+{
+    "dashboard": {
+        "states": [
+            {
+                "label": "{{precip.value}}{{precip.unit}}"
+            }
+        ],
+        "actions": []
+    },
+    "detailView": [
+        {
+            "label": "{{i18n.label}}",
+            "displayType": "state",
+            "state": {
+                "label": "{{precip.value}}",
+                "unit": "precip.unit"
+            }
+        }
+    ],
+    "automation": {
+        "conditions": [
+            {
+                "label": "Precipitation Rate",
+                "displayType": "numberField",
+                "numberField": {
+                    "value": "precip.value",
+                    "valueType": "number",
+                    "unit": "precip.unit",
+                    "range": [
+                        0,
+                        80
+                    ]
+                }
+            }
+        ],
+        "actions": []
+    },
+    "id": "partyvoice23922.preciprate",
+    "version": 1
+}

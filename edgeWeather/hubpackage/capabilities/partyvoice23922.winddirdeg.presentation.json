@@ -1,0 +1,45 @@
+{
+    "dashboard": {
+        "states": [
+            {
+                "label": "{{winddeg.value}}{{winddeg.unit}}"
+            }
+        ],
+        "actions": []
+    },
+    "detailView": [
+        {
+            "label": "{{i18n.label}}",
+            "displayType": "slider",
+            "slider": {
+                "range": [
+                    0,
+                    359
+                ],
+                "unit": "winddeg.unit",
+                "value": "winddeg.value",
+                "valueType": "number"
+            }
+        }
+    ],
+    "automation": {
+        "conditions": [
+            {
+                "label": "Wind Direction - compass",
+                "displayType": "numberField",
+                "numberField": {
+                    "value": "winddeg.value",
+                    "valueType": "number",
+                    "unit": "winddeg.unit",
+                    "range": [
+                        0,
+                        359
+                    ]
+                }
+            }
+        ],
+        "actions": []
+    },
+    "id": "partyvoice23922.winddirdeg",
+    "version": 1
+}
