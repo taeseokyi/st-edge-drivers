@@ -5,8 +5,8 @@
   "dashboard": {
       "states": [
           {
-              "component": "main",
-              "capability": "switch",
+              "component": "counter",
+              "capability": "partyvoice23922.count",
               "version": 1,
               "idx": 0,
               "group": "main",
@@ -14,8 +14,8 @@
               "composite": false
           },
           {
-              "component": "counter",
-              "capability": "partyvoice23922.count",
+              "component": "main",
+              "capability": "switch",
               "version": 1,
               "idx": 0,
               "group": "main",
@@ -185,7 +185,7 @@
               "exclusion": []
           },
           {
-              "component": "main",
+              "component": "counter",
               "capability": "partyvoice23922.resetnum",
               "version": 1,
               "values": [],

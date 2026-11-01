@@ -13,39 +13,140 @@
 
 
   DESCRIPTION
-  
+
   Edge utility device driver - track switch on duration and increment/decrement counter
 
 
-  Modified by Taeseok Yi, 2026: profile names changed to edgeutil.v1c / edgeutil_count.v1c;
-  device:online() added in device_init/device_added so health recovers after hub reconnect.
+  Modified by Taeseok Yi, 2026 (version 0.8):
+  - profile names changed to edgeutil.v1c / edgeutil_count.v1c
+  - device:online() in device_init/device_added so health recovers after hub reconnect
+  - contact sensor behavior 'disable' no longer aborts the switch handler
+  - 'increment' preference: count step for add/subtract and switch-linked counting
+  - 'resetnum' (reset counter to a given number) command handled
+  - auto-refresh timer is aligned to the duration base time, so values stay on
+    frequency boundaries (5, 10, 15 ...) across resets and driver restarts
+  - preference changes (frequency / scale / switchoff / behavior / dashboard) each take
+    effect immediately
+  - defensive fallbacks for missing or invalid preferences; globals removed
+  - devices migrated from another driver are moved onto this driver's profile once at init
 --]]
 
 -- Edge libraries
 local capabilities = require "st.capabilities"
 local Driver = require "st.driver"
-local cosock = require "cosock"                 -- just for time
 local socket = require "cosock.socket"          -- just for time
 local log = require "log"
 
 
 -- Module variables
-thisDriver = {}
+local thisDriver                                -- assigned at the bottom (Driver(...))
 local initialized = false
 
 local DURATION_PROFILE = 'edgeutil.v1c'
 local COUNT_PROFILE = 'edgeutil_count.v1c'
 
+local DEFAULT_SCALE = 'hours'                   -- matches the profile default
+local DEFAULT_FREQUENCY = 1800                  -- seconds, matches the profile default
+local MIN_FREQUENCY = 10
+
+local SCALE_DIVISOR = {
+  seconds = 1,
+  minutes = 60,
+  hours   = 3600,
+  days    = 86400,
+  weeks   = 604800,
+}
+
+-- contact sensor value per switch state, keyed by the 'behavior' preference.
+-- 'disable' (or anything unknown) has no entry: the contact sensor is left alone.
+local CONTACT_MAP = {
+  on_open   = { on = 'open',   off = 'closed' },
+  on_closed = { on = 'closed', off = 'open'   },
+}
+
 -- Custom Capabilities
 
 local cap_duration = capabilities["partyvoice23922.duration2"]
-local cap_count = capabilities["partyvoice23922.count"]
-local cap_add = capabilities["partyvoice23922.add2"]
+local cap_count    = capabilities["partyvoice23922.count"]
+local cap_add      = capabilities["partyvoice23922.add2"]
 local cap_subtract = capabilities["partyvoice23922.subtract2"]
-local cap_reset = capabilities["partyvoice23922.resetalt"]
-local cap_create = capabilities["partyvoice23922.createanother"]
+local cap_reset    = capabilities["partyvoice23922.resetalt"]
+local cap_resetnum = capabilities["partyvoice23922.resetnum"]
+local cap_create   = capabilities["partyvoice23922.createanother"]
 
--- Functions
+
+-----------------------------------------------------------------------
+--                        PREFERENCE ACCESSORS
+-----------------------------------------------------------------------
+
+local function get_scale(device)
+
+  local scale = device.preferences.scale
+  if SCALE_DIVISOR[scale] == nil then
+    log.warn(string.format('Invalid scale preference <%s>; using %s', tostring(scale), DEFAULT_SCALE))
+    scale = DEFAULT_SCALE
+  end
+  return scale
+
+end
+
+local function get_frequency(device)
+
+  local frequency = tonumber(device.preferences.frequency)
+  if frequency == nil then
+    log.warn(string.format('Missing frequency preference; using %d', DEFAULT_FREQUENCY))
+    frequency = DEFAULT_FREQUENCY
+  elseif frequency < MIN_FREQUENCY then
+    frequency = MIN_FREQUENCY
+  end
+  return math.floor(frequency)
+
+end
+
+local function get_count_step(device)
+
+  local step = tonumber(device.preferences.increment)
+  if step == nil or step < 1 then
+    step = 1
+  end
+  return math.floor(step)
+
+end
+
+local function desired_profile(device)
+
+  if device.preferences.dashboard == 'count' then
+    return COUNT_PROFILE
+  end
+  return DURATION_PROFILE
+
+end
+
+-- Move the device onto this driver's own profile (once). Devices that came over from
+-- another driver keep that driver's profile and presentation until the driver asks
+-- for a change; the dashboard preference decides which of our profiles applies.
+local function sync_profile(device)
+
+  if device:get_field('profileSynced') then
+    return
+  end
+  local profile = desired_profile(device)
+  log.info (string.format('Syncing device profile to %s', profile))
+  device:try_update_metadata({profile = profile})
+  device:set_field('profileSynced', true, {persist = true})
+
+end
+
+local function is_switch_on(device)
+
+  return device:get_latest_state('main', capabilities.switch.ID, capabilities.switch.switch.NAME) == 'on'
+
+end
+
+
+-----------------------------------------------------------------------
+--                        DEVICE CREATION
+-----------------------------------------------------------------------
 
 local function create_device(driver)
 
@@ -66,15 +167,20 @@ local function create_device(driver)
                               model = MODEL,
                               vendor_provided_label = VEND_LABEL,
                             }
-                      
+
   assert (driver:try_create_device(create_device_msg), "failed to create device")
 
 end
 
 
+-----------------------------------------------------------------------
+--                        DURATION / COUNT STATE
+-----------------------------------------------------------------------
+
 local function _update_duration(device, duration)
 
-  device:emit_component_event(device.profile.components.main, cap_duration.duration({value=duration, unit=device.preferences.scale}))
+  device:emit_component_event(device.profile.components.main,
+                              cap_duration.duration({value = duration, unit = get_scale(device)}))
 
 end
 
@@ -84,226 +190,267 @@ local function _update_count(device, count)
 
 end
 
+local function get_count(device)
+
+  return device:get_latest_state('counter', cap_count.ID, cap_count.count.NAME) or 0
+
+end
+
 
 local function calc_duration(device)
 
   local basetime = device:get_field('baseTime')
-  log.debug ('Calc: basetime=', basetime)
-
-  if basetime then
-  
-    local rawduration = os.time() - basetime
-    local devisor
-    
-    if device.preferences.scale == 'seconds' then
-      devisor = 1
-    elseif device.preferences.scale == 'minutes' then
-      devisor = 60
-    elseif device.preferences.scale == 'hours' then
-      devisor = 3600
-    elseif device.preferences.scale == 'days' then
-      devisor = 86400
-    elseif device.preferences.scale == 'weeks' then
-      devisor = 604800
-    end
-    
-    log.debug ('Calc: return=', math.floor(rawduration / devisor))
-    return math.floor(rawduration / devisor)
-  else
+  if not basetime then
     return 0
   end
+
+  local rawduration = os.time() - basetime
+  if rawduration < 0 then          -- clock went backwards
+    rawduration = 0
+  end
+
+  return math.floor(rawduration / SCALE_DIVISOR[get_scale(device)])
+
 end
 
 
-local function refresh_all(device)
+local function refresh_duration(device)
 
-  device:emit_component_event(device.profile.components.main, cap_duration.duration({value=calc_duration(device), unit=device.preferences.scale}))
-  --device:emit_component_event(device.profile.components.counter, cap_count.count(device:get_field('count')))
+  _update_duration(device, calc_duration(device))
 
 end
 
+
+-----------------------------------------------------------------------
+--                        AUTO REFRESH TIMER
+-----------------------------------------------------------------------
 
 local function stop_auto_refresh(device)
 
   local refreshtimer = device:get_field('refreshtimer')
   if refreshtimer then
     thisDriver:cancel_timer(refreshtimer)
+    device:set_field('refreshtimer', nil)
   end
 
 end
 
 
+-- Periodic duration refresh. The first tick is placed on the next multiple of
+-- 'frequency' seconds after baseTime, so that reported values land on 5, 10, 15 ...
+-- regardless of when the timer itself was (re)started (reset, driver restart).
 local function start_auto_refresh(device)
 
   stop_auto_refresh(device)
 
-  refreshtimer = device.thread:call_on_schedule(device.preferences.frequency, 
+  local frequency = get_frequency(device)
+
+  local function start_periodic()
+    local timer = device.thread:call_on_schedule(frequency,
+                                                 function() refresh_duration(device) end,
+                                                 'duration refresh')
+    device:set_field('refreshtimer', timer)
+  end
+
+  local basetime = device:get_field('baseTime')
+  local delay = frequency
+  if basetime then
+    local elapsed = os.time() - basetime
+    if elapsed > 0 then
+      delay = frequency - (elapsed % frequency)
+    end
+  end
+
+  if delay >= frequency then
+    start_periodic()
+  else
+    log.debug (string.format('Aligning refresh timer: first tick in %d s, then every %d s', delay, frequency))
+    local timer = device.thread:call_with_delay(delay,
                                                 function()
-                                                  refresh_all(device)
-                                                end )
-          
-  device:set_field('refreshtimer', refreshtimer)
+                                                  refresh_duration(device)
+                                                  start_periodic()
+                                                end,
+                                                'duration refresh align')
+    device:set_field('refreshtimer', timer)
+  end
 
 end
 
 
+-----------------------------------------------------------------------
+--                        COUNTER
+-----------------------------------------------------------------------
+
 local function increment_count(device)
 
-  local current_count = device:get_latest_state('counter', cap_count.ID, cap_count.count.NAME)
-  _update_count(device, current_count + 1)
+  _update_count(device, get_count(device) + get_count_step(device))
 
 end
 
 local function decrement_count(device)
 
-  local current_count = device:get_latest_state('counter', cap_count.ID, cap_count.count.NAME)
+  local current_count = get_count(device)
   if current_count > 0 then
-    _update_count(device, current_count - 1)
+    _update_count(device, math.max(current_count - get_count_step(device), 0))
   end
 
 end
 
 
 -----------------------------------------------------------------------
---										COMMAND HANDLERS
+--                        COMMAND HANDLERS
 -----------------------------------------------------------------------
-
--- DEVICE HANDLERS
 
 local function handle_switch(driver, device, command)
 
-  log.info ('Switch turned >> ' .. command.command .. ' <<')
-  
-  device:emit_event(capabilities.switch.switch(command.command))
-  
-  -- Set contactSensor according to preferences
-  
-  local contactset
-  
-  if device.preferences.behavior == 'on_open' then
-    contactset =  {
-                    ['on'] = 'open',
-                    ['off'] = 'closed'
-                  }
-  elseif device.preferences.behavior == 'on_closed' then
-    contactset =  {
-                    ['on'] = 'closed',
-                    ['off'] = 'open'
-                  }
+  local newstate = command.command
+  log.info ('Switch turned >> ' .. newstate .. ' <<')
+
+  device:emit_event(capabilities.switch.switch(newstate))
+
+  -- Mirror the switch onto the hidden contact sensor if the preference asks for it
+  local contactset = CONTACT_MAP[device.preferences.behavior]
+  if contactset then
+    device:emit_event(capabilities.contactSensor.contact(contactset[newstate]))
   end
 
-  device:emit_event(capabilities.contactSensor.contact(contactset[command.command]))                
-  
   -- Don't do anything else if a duplicate
-  if device:get_field('lastcmd') == command.command then; return; end
-  
+  if device:get_field('lastcmd') == newstate then
+    return
+  end
+
   -- Manage duration tracking
-  
+
   local duration
   local basetime = device:get_field('baseTime')
-  log.debug ('SW basetime=', basetime)
-  log.debug ('SW pausetime=', device:get_field('pauseTime'))
-  
-  if command.command == 'on' then
+  local pausetime = device:get_field('pauseTime')
+  log.debug (string.format('SW basetime=%s pausetime=%s', tostring(basetime), tostring(pausetime)))
 
-    if basetime == nil then
+  if newstate == 'on' then
+
+    if basetime == nil or not pausetime or pausetime == 0 then
+      -- fresh start (no base time, or base time without a matching pause)
       device:set_field('baseTime', os.time(), {persist = true})
       duration = 0
     else
-      local newbase = basetime + (os.time() - device:get_field('pauseTime'))
+      -- resume: shift the base time forward by the length of the pause
+      local newbase = basetime + (os.time() - pausetime)
       device:set_field('baseTime', newbase, {persist = true})
-      device:set_field('pauseTime', 0, {persist = true})
       log.debug ('\tSW new basetime=', newbase)
       duration = calc_duration(device)
     end
-    
-    if device.preferences.countlink == 'counton' or  device.preferences.countlink == 'countany' then
+    device:set_field('pauseTime', 0, {persist = true})
+
+    if device.preferences.countlink == 'counton' or device.preferences.countlink == 'countany' then
       increment_count(device)
     end
-    
+
     start_auto_refresh(device)
 
   else      -- switch == OFF
-    if device.preferences.switchoff == 'pause' then
+
+    stop_auto_refresh(device)
+
+    if device.preferences.switchoff == 'pause' and basetime then
       device:set_field('pauseTime', os.time(), {persist = true})
-      stop_auto_refresh(device)
       duration = calc_duration(device)
     else
-      duration = 0
       device:set_field('pauseTime', 0, {persist = true})
       device:set_field('baseTime', nil, {persist = true})
+      duration = 0
     end
-    
+
     if device.preferences.countlink == 'countoff' or device.preferences.countlink == 'countany' then
       increment_count(device)
     end
-    
-  end
-  
-  _update_duration(device, duration)
-  device:set_field('lastcmd', command.command)
 
-end 
+  end
+
+  _update_duration(device, duration)
+  device:set_field('lastcmd', newstate)
+
+end
 
 
 local function handle_addbutton(driver, device, command)
 
   log.info ('Add Button pressed')
-  
+
   increment_count(device)
-  
+
 end
 
 local function handle_subtractbutton(driver, device, command)
 
   log.info ('Subtract Button pressed')
-  
+
   decrement_count(device)
-  
+
 end
 
 
 local function handle_reset(driver, device, command)
 
-  log.info ('Reset button pressed')
-  
+  log.info ('Reset button pressed; component:', command.component)
+
   if command.component == 'main' then
 
     _update_duration(device, 0)
     device:set_field('pauseTime', 0, {persist = true})
-    
-    if device:get_latest_state('main', capabilities.switch.ID, capabilities.switch.switch.NAME) == 'on' then
+
+    if is_switch_on(device) then
       device:set_field('baseTime', os.time(), {persist = true})
+      -- re-align the refresh timer with the new base time
+      start_auto_refresh(device)
     else
       device:set_field('baseTime', nil, {persist = true})
+      stop_auto_refresh(device)
     end
-  
+
   elseif command.component == 'counter' then
-    
+
     _update_count(device, 0)
-    
+
   end
-    
+
+end
+
+
+-- Reset the counter to a user-supplied number (partyvoice23922.resetnum / resetValue)
+local function handle_resetnum(driver, device, command)
+
+  local value = tonumber(command.args and command.args.resetvalue)
+  log.info ('Reset counter to number requested; value:', tostring(value))
+
+  if value == nil or value < 0 then
+    log.warn ('Ignoring invalid reset value')
+    return
+  end
+  value = math.floor(value)
+
+  device:emit_component_event(device.profile.components.counter, cap_resetnum.numberval(value))
+  _update_count(device, value)
+
 end
 
 
 local function handle_create(driver, device, command)
 
-	log.info ('Create device requested')
+  log.info ('Create device requested')
 
-	create_device(driver)
+  create_device(driver)
 
 end
 
 
 local function handle_stockrefresh(driver, device, command)
 
-  log.info ('Stock refresh requested; command:', command.command)
+  log.info ('Stock refresh requested; component:', command.component)
 
-  if device:get_latest_state('main', capabilities.switch.ID, capabilities.switch.switch.NAME) == 'on' then
-    refresh_all(device)
+  if is_switch_on(device) then
+    refresh_duration(device)
   end
-  
+
 end
 
 
@@ -313,20 +460,23 @@ end
 
 -- Lifecycle handler to initialize existing devices AND newly discovered devices
 local function device_init(driver, device)
-  
+
   log.debug(device.id .. ": " .. device.device_network_id .. "> INITIALIZING")
 
-  _update_duration(device, calc_duration(device))
-  
+  refresh_duration(device)
+
   local currswitchstate = device:get_latest_state('main', capabilities.switch.ID, capabilities.switch.switch.NAME)
   device:set_field('lastcmd', currswitchstate)
-  
+
   if currswitchstate == 'on' then
     start_auto_refresh(device)
   end
 
+  sync_profile(device)
+
   initialized = true
   device:online()
+
 end
 
 
@@ -334,10 +484,12 @@ end
 local function device_added (driver, device)
 
   log.info(device.id .. ": " .. device.device_network_id .. "> ADDED")
-  
+
+  stop_auto_refresh(device)
+
   device:emit_event(capabilities.switch.switch('off'))
   device:emit_event(capabilities.contactSensor.contact('closed'))
-  
+
   _update_duration(device, 0)
   _update_count(device, 0)
   device:set_field('pauseTime', 0, {persist = true})
@@ -358,18 +510,18 @@ end
 
 -- Called when device was deleted
 local function device_removed(driver, device)
-  
+
   log.warn(device.id .. ": " .. device.device_network_id .. "> removed")
 
   stop_auto_refresh(device)
 
-	local device_list = driver:get_devices()
+  local device_list = driver:get_devices()
 
-	if #device_list == 0 then
+  if #device_list == 0 then
     log.warn('No more devices; driver not active')
-		initialized = false
-	end
-  
+    initialized = false
+  end
+
 end
 
 
@@ -384,28 +536,50 @@ local function handler_infochanged (driver, device, event, args)
 
   log.debug ('Info changed handler invoked')
 
-  
-  -- Did preferences change?
-  if args.old_st_store.preferences then
-  
-    if args.old_st_store.preferences.frequency ~= device.preferences.frequency then
-      log.info ('Refresh frequency changed to: ', device.preferences.frequency)
-      
-      if device:get_latest_state('main', capabilities.switch.ID, capabilities.switch.switch.NAME) == 'on' then
-        start_auto_refresh(device)
-      end
-      
-    elseif args.old_st_store.preferences.dashboard ~= device.preferences.dashboard then
-      log.info ('Dashboard preference changed to: ', device.preferences.dashboard)
-      
-      if device.preferences.dashboard == 'duration' then
-        device:try_update_metadata({profile=DURATION_PROFILE})
-      elseif device.preferences.dashboard == 'count' then
-        device:try_update_metadata({profile=COUNT_PROFILE})
-      end
+  local oldprefs = args.old_st_store and args.old_st_store.preferences
+  if not oldprefs then
+    return
+  end
+  local prefs = device.preferences
+
+  -- Each preference is checked on its own; several may change at once.
+
+  if oldprefs.frequency ~= prefs.frequency then
+    log.info ('Refresh frequency changed to: ', prefs.frequency)
+    if is_switch_on(device) then
+      start_auto_refresh(device)
     end
   end
-  
+
+  if oldprefs.scale ~= prefs.scale then
+    log.info ('Duration scale changed to: ', prefs.scale)
+    refresh_duration(device)
+  end
+
+  if oldprefs.switchoff ~= prefs.switchoff then
+    log.info ('Switch off action changed to: ', prefs.switchoff)
+    -- Switching from 'pause' to 'reset' while paused: drop the paused duration now
+    if prefs.switchoff == 'reset' and not is_switch_on(device) then
+      device:set_field('pauseTime', 0, {persist = true})
+      device:set_field('baseTime', nil, {persist = true})
+      _update_duration(device, 0)
+    end
+  end
+
+  if oldprefs.behavior ~= prefs.behavior then
+    log.info ('Contact sensor behavior changed to: ', prefs.behavior)
+    -- Bring the hidden contact sensor in line with the current switch state right away
+    local contactset = CONTACT_MAP[prefs.behavior]
+    if contactset then
+      device:emit_event(capabilities.contactSensor.contact(contactset[is_switch_on(device) and 'on' or 'off']))
+    end
+  end
+
+  if oldprefs.dashboard ~= prefs.dashboard then
+    log.info ('Dashboard preference changed to: ', prefs.dashboard)
+    device:try_update_metadata({profile = desired_profile(device)})
+  end
+
 end
 
 
@@ -413,7 +587,6 @@ local function shutdown_handler(driver, event)
 
   if event == 'shutdown' then
     log.warn('*** Driver shutdown ***')
-    
   end
 
 end
@@ -421,15 +594,15 @@ end
 
 -- Discovery (when 'Scan for nearby devices' invoked from mobile app)
 local function discovery_handler(driver, _, should_continue)
-  
+
   if not initialized then
-  
+
     log.info("Creating counter device")
-    
+
     create_device(driver)
-    
+
     log.debug("Exiting device creation")
-    
+
   else
     log.info ('At least one counter device already exists')
   end
@@ -451,7 +624,7 @@ thisDriver = Driver("thisDriver", {
   },
   driver_lifecycle = shutdown_handler,
   capability_handlers = {
-  
+
     [capabilities.switch.ID] = {
       [capabilities.switch.commands.on.NAME] = handle_switch,
       [capabilities.switch.commands.off.NAME] = handle_switch,
@@ -459,11 +632,14 @@ thisDriver = Driver("thisDriver", {
     [cap_add.ID] = {
       [cap_add.commands.push.NAME] = handle_addbutton,
     },
-		[cap_subtract.ID] = {
+    [cap_subtract.ID] = {
       [cap_subtract.commands.push.NAME] = handle_subtractbutton,
     },
     [cap_reset.ID] = {
       [cap_reset.commands.push.NAME] = handle_reset,
+    },
+    [cap_resetnum.ID] = {
+      [cap_resetnum.commands.resetValue.NAME] = handle_resetnum,
     },
     [cap_create.ID] = {
       [cap_create.commands.push.NAME] = handle_create,
@@ -474,7 +650,7 @@ thisDriver = Driver("thisDriver", {
   }
 })
 
-log.info ('Edge Counter-utility Device Version 0.4')
+log.info ('Edge Counter-utility Device Version 0.8')
 
 
 thisDriver:run()

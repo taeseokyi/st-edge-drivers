@@ -6,7 +6,7 @@
       "states": [
           {
               "component": "main",
-              "capability": "switch",
+              "capability": "partyvoice23922.duration2",
               "version": 1,
               "idx": 0,
               "group": "main",
@@ -15,7 +15,7 @@
           },
           {
               "component": "main",
-              "capability": "partyvoice23922.duration2",
+              "capability": "switch",
               "version": 1,
               "idx": 0,
               "group": "main",

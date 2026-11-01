@@ -24,12 +24,14 @@ components:
         version: 1
       - id: partyvoice23922.count
         version: 1
+      - id: partyvoice23922.resetnum
+        version: 1
       - id: partyvoice23922.resetalt
         version: 1
       - id: refresh
         version: 1
 metadata:
-  vid: 9eec5e73-2d12-3bb6-befe-e832f9c5a9a0
+  vid: 574c6cab-583f-3c4c-a2a4-7cbcfc4ad3b5
   mnmn: Taeseokyi
   ocfDeviceType: oic.wk.d
 preferences:
@@ -88,6 +90,14 @@ preferences:
         on_closed: "On = Closed"
         disable: "Disabled"
       default: on_open
+  - title: "Counter Increment"
+    name: increment
+    description: "Amount added or subtracted per count"
+    required: true
+    preferenceType: integer
+    definition:
+      minimum: 1
+      default: 1
   - title: "Dashboard State & Control"
     name: dashboard
     description: "Select preference"

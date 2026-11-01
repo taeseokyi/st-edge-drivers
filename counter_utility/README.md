@@ -29,7 +29,7 @@ The counter can also be tied to the switch such that it counts the number of tim
 Here is where you chose what 'unit' of measure you want to use: seconds, minutes, hours, days, weeks.  Typically you would choose the lowest granularity needed, as the duration values are integers.
 
 ##### Duration Auto-Update Frequency
-How often the duration value is updated *for display and automations* is determined by this setting.  The frequency is provided in number of seconds, with a minimum of 10 and a maximum of 86400 (one day).  Note that duration is always continually tracked down to the second within the driver.  But because it would cause rate limit issues to try and update SmartThings cloud every second, this option merely determines the frequency of actual *displayed* values in the mobile app, and currency of values *available to automations*.
+How often the duration value is updated *for display and automations* is determined by this setting.  The frequency is provided in number of seconds, with a minimum of 10 and a maximum of 86400 (one day).  Updates are aligned to the moment duration tracking started (or was last reset), so with a frequency of 300 seconds and minutes resolution the reported values are 5, 10, 15 ... even after a hub reboot or driver update.  Note that duration is always continually tracked down to the second within the driver.  But because it would cause rate limit issues to try and update SmartThings cloud every second, this option merely determines the frequency of actual *displayed* values in the mobile app, and currency of values *available to automations*.
 
 ##### Switch Off Action
 When the switch is turned OFF, it can either temporarily pause the duration tracking until the switch is turned ON again, or it can completely reset the duration tracking to 0 and stop tracking duration.  Use this Setting to determine which mode you need.
@@ -39,6 +39,9 @@ Normally the duration tracking of the switch, and the counter using the add and 
 
 ##### Contact sensor Behavior
 A hidden contact sensor is included in the device but not displayed on the device Controls screen.  This is included in order to facilitate integrations of this device into Alexa routines.  The contact sensor allows for creating the 'When this happens' part of the routine definition.  The contact sensor can be used as a surrogate for the switch state when this device Setting is configured.  Options are (1) set contact to **open** when switch is ON, (2) set contact to **closed** when switch is OFF, (3) disable setting of contact sensor state.
+
+##### Counter Increment
+The amount added (or subtracted) each time the counter is incremented or decremented, whether by the add/subtract buttons, by an automation, or by the switch/counter linkage.  Minimum 1, default 1.  (Added 2026-11-01 to match the setting that exists on devices migrated from the Edge Counter Utility V1.1 driver.)
 
 ##### Dashboard State & Control
 As a default, the dashboard tile for this device includes a button to control the switch, as well as the duration value including the selected units (seconds, minutes, etc.) However if the device is going to be used primarily for counting rather than switch duration tracking, this device Setting allows you to change the dashboard view to be a button for incrementing the counter, plus the current count value.
@@ -59,7 +62,7 @@ The screen has 2 sections ('components')
 * Button to increment counter
 * Button to decrement counter
 * Count value field
-* Reset to a specified number
+* Reset to a specified number: enter a number and the count is set to it (the number is kept as the `numberval` attribute)
 
 ### Automations
 
