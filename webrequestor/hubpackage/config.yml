@@ -1,5 +1,5 @@
 # Modified by Taeseok Yi, 2026: driver name and packageKey changed (original: Todd Austin, Apache 2.0)
-name: 'Web Requestor Multi-Auto v1.4'
+name: 'Web Requestor Multi-Auto v1.5'
 packageKey: 'webreqmautov1.4'
 permissions:
     lan: {}

@@ -19,6 +19,9 @@
 
   Modified by Taeseok Yi, 2026: dashboard-specific profiles (none/string/number/dKH), keynumvalue + temperatureMeasurement events,
   dKH (carbonate hardness) dashboard mode with 3-decimal display, periodic auto-refresh timer.
+  v1.5: device profile is chosen from the dashboard preference at init (previously init forced the
+  number profile, undoing a dKH/none/string choice on every driver restart), so devices migrated from
+  another driver land on this driver's own profile; device_removed timer cancel fixed.
 --]]
 
 -- Edge libraries
@@ -45,14 +48,31 @@ local devcounter = 1
 local webreq_commands = {}
 
 local BODYDELIM = '{{^}}'
-local DEVICEPROFILE = 'webrequestm_dashnone.v2e'
-local STRING_DEVICEPROFILE = 'webrequestm_dashstr.v2e'
 local NUMBER_DEVICEPROFILE = 'webrequestm_dashnum.v2f'
-local DEVICEADDLPROFILE = 'webrequestm_addl_dashnone.v2e'
-local STRING_DEVICEADDLPROFILE = 'webrequestm_addl_dashstr.v2e'
 local NUMBER_DEVICEADDLPROFILE = 'webrequestm_addl_dashnum.v2f'
-local DKH_DEVICEPROFILE = 'webrequestm_dashdkh.v2f'
-local DKH_DEVICEADDLPROFILE = 'webrequestm_addl_dashdkh.v2f'
+
+-- Profile for a device, from its dashboard preference and whether it is a master
+-- (master = has the 'create another device' capability). Used at init, so a device
+-- that came over from another driver, or whose profile is out of date, is put on this
+-- driver's own profile; and when the dashboard preference changes.
+local PROFILE_BY_DASHBOARD = {
+  none          = { master = 'webrequestm_dashnone.v2e',  addl = 'webrequestm_addl_dashnone.v2e' },
+  extractstring = { master = 'webrequestm_dashstr.v2e',   addl = 'webrequestm_addl_dashstr.v2e'  },
+  extractnum    = { master = 'webrequestm_dashnum.v2f',   addl = 'webrequestm_addl_dashnum.v2f'  },
+  extractdkh    = { master = 'webrequestm_dashdkh.v2f',   addl = 'webrequestm_addl_dashdkh.v2f'  },
+}
+
+local function is_master(device)
+  return device:supports_capability_by_id('partyvoice23922.createanother')
+end
+
+local function profile_for(device)
+  local entry = PROFILE_BY_DASHBOARD[device.preferences.dashboard] or PROFILE_BY_DASHBOARD.extractnum
+  if is_master(device) then
+    return entry.master
+  end
+  return entry.addl
+end
 
 -- Custom capabilities
 local cap_select = capabilities["partyvoice23922.webrequestselect"]
@@ -556,14 +576,10 @@ local function device_init(driver, device)
   
   log.debug(device.id .. ": " .. device.device_network_id .. "> INITIALIZING")
   
-  local ismaster = device:supports_capability_by_id('partyvoice23922.createanother')
-  log.debug (string.format('Device <%s> is master? %s', device.label, ismaster))
-  if ismaster then
-    device:try_update_metadata({profile=NUMBER_DEVICEPROFILE})
-  else
-    device:try_update_metadata({profile=NUMBER_DEVICEADDLPROFILE})
-  end
-  
+  local profile = profile_for(device)
+  log.debug (string.format('Device <%s> is master? %s; profile %s', device.label, tostring(is_master(device)), profile))
+  device:try_update_metadata({profile = profile})
+
   webreq_commands[device.id] = {}
 
   for key, value in pairs(device.preferences) do
@@ -637,7 +653,7 @@ end
 
 
 -- Called when device was deleted via mobile app
-local function device_removed(_, device)
+local function device_removed(driver, device)
   
   log.warn(device.id .. ": " .. device.device_network_id .. "> removed")
 
@@ -757,34 +773,7 @@ local function handler_infochanged (driver, device, event, args)
     elseif args.old_st_store.preferences.dashboard ~= device.preferences.dashboard then
       log.info ('Dashboard preference changed to: ', device.preferences.dashboard)
 
-      local ismaster = device:supports_capability_by_id('partyvoice23922.createanother')
-      log.debug (string.format('Device <%s> is master? %s', device.label, ismaster))
-
-      if device.preferences.dashboard == 'none' then
-        if ismaster then
-          device:try_update_metadata({profile=DEVICEPROFILE})
-        else
-          device:try_update_metadata({profile=DEVICEADDLPROFILE})
-        end
-      elseif device.preferences.dashboard == 'extractstring' then
-        if ismaster then
-          device:try_update_metadata({profile=STRING_DEVICEPROFILE})
-        else
-          device:try_update_metadata({profile=STRING_DEVICEADDLPROFILE})
-        end
-      elseif device.preferences.dashboard == 'extractnum' then
-        if ismaster then
-          device:try_update_metadata({profile=NUMBER_DEVICEPROFILE})
-        else
-          device:try_update_metadata({profile=NUMBER_DEVICEADDLPROFILE})
-        end
-      elseif device.preferences.dashboard == 'extractdkh' then
-        if ismaster then
-          device:try_update_metadata({profile=DKH_DEVICEPROFILE})
-        else
-          device:try_update_metadata({profile=DKH_DEVICEADDLPROFILE})
-        end
-      end
+      device:try_update_metadata({profile = profile_for(device)})
     end
     
     if restarttimer then; restart_timer(driver, device); end
@@ -864,6 +853,6 @@ webreqDriver = Driver("webreqDriver", {
   }
 })
 
-log.info ('Web Requestor Multi-Auto Driver v1.4 Started')
+log.info ('Web Requestor Multi-Auto Driver v1.5 Started')
 
 webreqDriver:run()
