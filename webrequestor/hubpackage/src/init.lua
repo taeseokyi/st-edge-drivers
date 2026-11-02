@@ -18,6 +18,9 @@
 
 
   Modified by Taeseok Yi, 2026: dashboard-specific profiles (none/string/number/dKH), keynumvalue + temperatureMeasurement events,
+  profiles v2h (2026-11-02): dashboard modes are explicit - plain number (keynumvalue only, no temperature),
+  temperature (keynumvalue + temperatureMeasurement for the app graph), dKH (dkhvalue + CO2 graph);
+  detail views show only the value row for the mode (raw string/numeric rows hidden where redundant);
   dKH (carbonate hardness) dashboard mode with 3-decimal display, periodic auto-refresh timer.
   v1.5: device profile is chosen from the dashboard preference at init (previously init forced the
   number profile, undoing a dKH/none/string choice on every driver restart), so devices migrated from
@@ -56,10 +59,11 @@ local NUMBER_DEVICEADDLPROFILE = 'webrequestm_addl_dashnum.v2f'
 -- that came over from another driver, or whose profile is out of date, is put on this
 -- driver's own profile; and when the dashboard preference changes.
 local PROFILE_BY_DASHBOARD = {
-  none          = { master = 'webrequestm_dashnone.v2e',  addl = 'webrequestm_addl_dashnone.v2e' },
-  extractstring = { master = 'webrequestm_dashstr.v2e',   addl = 'webrequestm_addl_dashstr.v2e'  },
-  extractnum    = { master = 'webrequestm_dashnum.v2f',   addl = 'webrequestm_addl_dashnum.v2f'  },
-  extractdkh    = { master = 'webrequestm_dashdkh.v2f',   addl = 'webrequestm_addl_dashdkh.v2f'  },
+  none          = { master = 'webrequestm_dashnone.v2h',  addl = 'webrequestm_addl_dashnone.v2h' },
+  extractstring = { master = 'webrequestm_dashstr.v2h',   addl = 'webrequestm_addl_dashstr.v2h'  },
+  extractnum    = { master = 'webrequestm_dashnum.v2h',   addl = 'webrequestm_addl_dashnum.v2h'  },  -- plain number
+  extracttemp   = { master = 'webrequestm_dashtemp.v2h',  addl = 'webrequestm_addl_dashtemp.v2h' },  -- temperature + graph
+  extractdkh    = { master = 'webrequestm_dashdkh.v2h',   addl = 'webrequestm_addl_dashdkh.v2h'  },  -- dKH + CO2 graph
 }
 
 local function is_master(device)
@@ -337,6 +341,8 @@ local function issue_request(device, req_method, req_url, sendbody, optheaders)
             
             if kvalue ~= nil then
               if device.preferences.dashboard == 'extractnum' then
+                device:emit_event(cap_keynumvalue.keynumvalue(tonumber(kvalue)))
+              elseif device.preferences.dashboard == 'extracttemp' then
                 device:emit_event(cap_keynumvalue.keynumvalue(tonumber(kvalue)))
                 device:emit_component_event(device.profile.components.main, capabilities.temperatureMeasurement.temperature({value=tonumber(kvalue), unit='C'}))
               elseif device.preferences.dashboard == 'extractdkh' then
@@ -635,7 +641,9 @@ local function device_added (driver, device)
 	device:emit_event(cap_response.response(' '))
 	device:emit_event(cap_keyvalue.keyvalue(' '))
   device:emit_event(cap_keynumvalue.keynumvalue(26))
-  device:emit_component_event(device.profile.components.main, capabilities.temperatureMeasurement.temperature({value=26, unit='C'}))
+  if device:supports_capability_by_id('temperatureMeasurement') then
+    device:emit_component_event(device.profile.components.main, capabilities.temperatureMeasurement.temperature({value=26, unit='C'}))
+  end
   if device:supports_capability_by_id('cleverflower44023.dkhvalue') then
     device:emit_event(cap_dkhvalue.dkh(0))
     device:emit_event(cap_dkhvalue.dkhtext('--'))

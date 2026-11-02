@@ -31,8 +31,10 @@ Taeseok Yi 가 수정해 **Tsyi Channel** 로 배포한다.
 - `hubpackage/config.yml`: 드라이버 이름/packageKey 변경.
 - `hubpackage/capabilities/partyvoice23922.keyvalue.presentation.{yaml,json}`: 표시 설정 변경.
 - `hubpackage/capabilities/cleverflower44023.*`: 추가 (본인 네임스페이스 capability).
-- `hubpackage/profiles/webrequestm*_dash{none,str,num,dkh}.v2{e,f}.yaml`: 추가. 원본 profiles 는 제거.
-- `hubpackage/*_device-config.v2f.json`: 추가.
+- `hubpackage/profiles/webrequestm*_dash{none,str,num,temp,dkh}.v2{e,f,g,h}.yaml`: 추가. 원본 profiles 는 제거.
+  (v2h: Dashboard State 를 none / 문자열 / 일반 숫자 / 온도(그래프) / 경도 dKH(그래프) 로 명시, 각 모드의
+  상세 화면에는 해당 값 행만 표시)
+- `hubpackage/*_device-config.v2{f,g,h}.json`: 추가.
 
 `edgeWeather/`
 - `hubpackage/config.yml`: 드라이버 이름/packageKey 변경.

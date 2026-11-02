@@ -1,0 +1,811 @@
+name: webrequestm_dashnum.v2h
+metadata:
+  vid: 64ebbd69-7fa0-344e-8790-35a889522c42
+  mnmn: Taeseokyi
+preferences:
+  - title: "Select web requeset to refresh"
+    name: refreshurl
+    description: "Number of Web request"
+    required: true
+    preferenceType: number
+    definition:
+      minimum: 1
+      maximum: 50
+      default: 1
+  - title: "Periodic Refresh"
+    name: autorefresh
+    description: "Enable/disable"
+    required: true
+    preferenceType: enumeration
+    definition:
+      options:
+        enabled: "Enable auto refresh"
+        disabled: "No auto refresh"
+      default: disabled
+  - title: "Refresh Rate"
+    name: refreshrate
+    description: "Every n minutes"
+    required: false
+    preferenceType: integer
+    definition:
+      minimum: 1
+      maximum: 1440
+      default: 60
+  - preferenceId: timeout
+    name: timeout
+    title: Response Timeout
+    description: Number of seconds
+    required: true
+    explicit: false
+    preferenceType: number
+    definition:
+      minimum: 1
+      maximum: 60
+      default: 3
+  - preferenceId: valuekey
+    name: valuekey
+    title: Response key to extract
+    description: JSON or XML key
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 2
+      stringType: text
+      default: x1x
+  - preferenceId: autoheaders
+    name: autoheaders
+    title: Automation-generated Request Headers
+    description: Comma-delimited header list
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: dashboard
+    name: dashboard
+    title: Dashboard State
+    description: Choose the dashboard display state
+    required: false
+    explicit: false
+    preferenceType: enumeration
+    definition:
+      options:
+        none: None
+        extractstring: Extracted string value
+        extractnum: Extracted numeric value
+        extracttemp: Temperature (°C, with graph)
+        extractdkh: dKH value (3 decimals, with graph)
+      default: extractnum
+  - preferenceId: request1
+    name: request1
+    title: 'Web Request #1'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: body1
+    name: body1
+    title: 'Web Request #1 - Body'
+    description: HTTP body
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: bodyb1
+    name: bodyb1
+    title: 'Web Request #1 - More Body'
+    description: Additional HTTP body
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: headers1
+    name: headers1
+    title: 'Web Request #1 - Headers'
+    description: Comma-delimited header list
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: request2
+    name: request2
+    title: 'Web Request #2'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: body2
+    name: body2
+    title: 'Web Request #2 - Body'
+    description: HTTP body
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: bodyb2
+    name: bodyb2
+    title: 'Web Request #2 - More Body'
+    description: Additional HTTP body
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: headers2
+    name: headers2
+    title: 'Web Request #2 - Headers'
+    description: Comma-delimited header list
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: request3
+    name: request3
+    title: 'Web Request #3'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: body3
+    name: body3
+    title: 'Web Request #3 - Body'
+    description: HTTP body
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: bodyb3
+    name: bodyb3
+    title: 'Web Request #3 - More Body'
+    description: Additional HTTP body
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: headers3
+    name: headers3
+    title: 'Web Request #3 - Headers'
+    description: Comma-delimited header list
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: request4
+    name: request4
+    title: 'Web Request #4'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: body4
+    name: body4
+    title: 'Web Request #4 - Body'
+    description: HTTP body
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: bodyb4
+    name: bodyb4
+    title: 'Web Request #4 - More Body'
+    description: Additional HTTP body
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: headers4
+    name: headers4
+    title: 'Web Request #4 - Headers'
+    description: Comma-delimited header list
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: request5
+    name: request5
+    title: 'Web Request #5'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: body5
+    name: body5
+    title: 'Web Request #5 - Body'
+    description: HTTP body
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: bodyb5
+    name: bodyb5
+    title: 'Web Request #5 - More Body'
+    description: Additional HTTP body
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: headers5
+    name: headers5
+    title: 'Web Request #5 - Headers'
+    description: Comma-delimited header list
+    required: false
+    explicit: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: '--'
+  - preferenceId: request6
+    name: request6
+    title: 'Web Request #6'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request7
+    name: request7
+    title: 'Web Request #7'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request8
+    name: request8
+    title: 'Web Request #8'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request9
+    name: request9
+    title: 'Web Request #9'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request10
+    name: request10
+    title: 'Web Request #10'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request11
+    name: request11
+    title: 'Web Request #11'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request12
+    name: request12
+    title: 'Web Request #12'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request13
+    name: request13
+    title: 'Web Request #13'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request14
+    name: request14
+    title: 'Web Request #14'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request15
+    name: request15
+    title: 'Web Request #15'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request16
+    name: request16
+    title: 'Web Request #16'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request17
+    name: request17
+    title: 'Web Request #17'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request18
+    name: request18
+    title: 'Web Request #18'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request19
+    name: request19
+    title: 'Web Request #19'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request20
+    name: request20
+    title: 'Web Request #20'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request21
+    name: request21
+    title: 'Web Request #21'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request22
+    name: request22
+    title: 'Web Request #22'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request23
+    name: request23
+    title: 'Web Request #23'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request24
+    name: request24
+    title: 'Web Request #24'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request25
+    name: request25
+    title: 'Web Request #25'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request26
+    name: request26
+    title: 'Web Request #26'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request27
+    name: request27
+    title: 'Web Request #27'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request28
+    name: request28
+    title: 'Web Request #28'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request29
+    name: request29
+    title: 'Web Request #29'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request30
+    name: request30
+    title: 'Web Request #30'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request31
+    name: request31
+    title: 'Web Request #31'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request32
+    name: request32
+    title: 'Web Request #32'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request33
+    name: request33
+    title: 'Web Request #33'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request34
+    name: request34
+    title: 'Web Request #34'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request35
+    name: request35
+    title: 'Web Request #35'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request36
+    name: request36
+    title: 'Web Request #36'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request37
+    name: request37
+    title: 'Web Request #37'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request38
+    name: request38
+    title: 'Web Request #38'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request39
+    name: request39
+    title: 'Web Request #39'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request40
+    name: request40
+    title: 'Web Request #40'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request41
+    name: request41
+    title: 'Web Request #41'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request42
+    name: request42
+    title: 'Web Request #42'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request43
+    name: request43
+    title: 'Web Request #43'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request44
+    name: request44
+    title: 'Web Request #44'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request45
+    name: request45
+    title: 'Web Request #45'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request46
+    name: request46
+    title: 'Web Request #46'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request47
+    name: request47
+    title: 'Web Request #47'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request48
+    name: request48
+    title: 'Web Request #48'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request49
+    name: request49
+    title: 'Web Request #49'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: POST:http://192.168.1.n:8888/urlpath?parm1=xxx
+  - preferenceId: request50
+    name: request50
+    title: 'Web Request #50'
+    description: Method:URL string
+    required: true
+    explicit: false
+    preferenceType: string
+    definition:
+      minLength: 18
+      stringType: text
+      default: GET:http://192.168.1.n:8888/urlpath?parm1=xxx
+components:
+  - label: main
+    id: main
+    capabilities:
+      - id: partyvoice23922.webrequestselect
+        version: 1
+        ephemeral: false
+      - id: partyvoice23922.webrequest
+        version: 1
+        ephemeral: false
+      - id: partyvoice23922.apiwebrequest
+        version: 1
+        ephemeral: false
+      - id: partyvoice23922.httpcode
+        version: 1
+        ephemeral: false
+      - id: partyvoice23922.httpresponse
+        version: 1
+        ephemeral: false
+      - id: partyvoice23922.keyvalue2
+        version: 1
+        ephemeral: false
+      - id: partyvoice23922.keynumvalue
+        version: 1
+        ephemeral: false
+      - id: partyvoice23922.createanother
+        version: 1
+        ephemeral: false
+    categories:
+      - name: Others
+        categoryType: manufacturer
