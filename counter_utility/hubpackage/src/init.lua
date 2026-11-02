@@ -32,7 +32,8 @@
 
   Version 0.9 (2026-11-02):
   - dashboard text capability (cleverflower44023.dashtext) shows the count with a unit ("회")
-  - 'both' dashboard option: duration and count on one tile (profile edgeutil_both.v1d)
+  - 'both' dashboard option: duration and count on one tile (profile edgeutil_both.v1d),
+    duration shown with a short unit (분/시간/...) to keep the tile narrow
   - profile names bumped to v1d; profile sync re-runs whenever the wanted profile name changes
 --]]
 
@@ -52,6 +53,16 @@ local COUNT_PROFILE = 'edgeutil_count.v1d'
 local BOTH_PROFILE = 'edgeutil_both.v1d'
 
 local COUNT_UNIT = '회'                         -- unit shown after the count on the dashboard
+
+-- short duration unit for the combined ('both') dashboard text; the full scale name
+-- ('minutes') made the tile too long next to the count
+local SHORT_UNIT = {
+  seconds = '초',
+  minutes = '분',
+  hours   = '시간',
+  days    = '일',
+  weeks   = '주',
+}
 
 local DEFAULT_SCALE = 'hours'                   -- matches the profile default
 local DEFAULT_FREQUENCY = 1800                  -- seconds, matches the profile default
@@ -203,7 +214,7 @@ local function get_duration(device)
 end
 
 -- Dashboard text for the 'count' and 'both' dashboard modes. The count is shown with
--- COUNT_UNIT; 'both' prefixes the duration and its scale. Skipped silently when the
+-- COUNT_UNIT; 'both' prefixes the duration with a short unit. Skipped silently when the
 -- current profile has no dashtext capability (duration mode, or profile not yet switched).
 local function update_dashtext(device, duration, count)
 
@@ -218,7 +229,7 @@ local function update_dashtext(device, duration, count)
 
   local text = string.format('%d %s', count or get_count(device), COUNT_UNIT)
   if mode == 'both' then
-    text = string.format('%d %s / %s', duration or get_duration(device), get_scale(device), text)
+    text = string.format('%d %s / %s', duration or get_duration(device), SHORT_UNIT[get_scale(device)], text)
   end
 
   device:emit_component_event(device.profile.components.main, cap_dashtext.text(text))
