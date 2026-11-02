@@ -29,6 +29,11 @@
     effect immediately
   - defensive fallbacks for missing or invalid preferences; globals removed
   - devices migrated from another driver are moved onto this driver's profile once at init
+
+  Version 0.9 (2026-11-02):
+  - dashboard text capability (cleverflower44023.dashtext) shows the count with a unit ("회")
+  - 'both' dashboard option: duration and count on one tile (profile edgeutil_both.v1d)
+  - profile names bumped to v1d; profile sync re-runs whenever the wanted profile name changes
 --]]
 
 -- Edge libraries
@@ -42,8 +47,11 @@ local log = require "log"
 local thisDriver                                -- assigned at the bottom (Driver(...))
 local initialized = false
 
-local DURATION_PROFILE = 'edgeutil.v1c'
-local COUNT_PROFILE = 'edgeutil_count.v1c'
+local DURATION_PROFILE = 'edgeutil.v1d'
+local COUNT_PROFILE = 'edgeutil_count.v1d'
+local BOTH_PROFILE = 'edgeutil_both.v1d'
+
+local COUNT_UNIT = '회'                         -- unit shown after the count on the dashboard
 
 local DEFAULT_SCALE = 'hours'                   -- matches the profile default
 local DEFAULT_FREQUENCY = 1800                  -- seconds, matches the profile default
@@ -73,6 +81,7 @@ local cap_subtract = capabilities["partyvoice23922.subtract2"]
 local cap_reset    = capabilities["partyvoice23922.resetalt"]
 local cap_resetnum = capabilities["partyvoice23922.resetnum"]
 local cap_create   = capabilities["partyvoice23922.createanother"]
+local cap_dashtext = capabilities["cleverflower44023.dashtext"]
 
 
 -----------------------------------------------------------------------
@@ -115,25 +124,29 @@ end
 
 local function desired_profile(device)
 
-  if device.preferences.dashboard == 'count' then
+  local mode = device.preferences.dashboard
+  if mode == 'count' then
     return COUNT_PROFILE
+  elseif mode == 'both' then
+    return BOTH_PROFILE
   end
   return DURATION_PROFILE
 
 end
 
--- Move the device onto this driver's own profile (once). Devices that came over from
--- another driver keep that driver's profile and presentation until the driver asks
--- for a change; the dashboard preference decides which of our profiles applies.
+-- Move the device onto this driver's own profile (once per profile name). Devices that
+-- came over from another driver keep that driver's profile and presentation until the
+-- driver asks for a change; the dashboard preference decides which of our profiles
+-- applies. The synced name is remembered so a new profile version is picked up at init.
 local function sync_profile(device)
 
-  if device:get_field('profileSynced') then
+  local profile = desired_profile(device)
+  if device:get_field('profileSynced') == profile then
     return
   end
-  local profile = desired_profile(device)
   log.info (string.format('Syncing device profile to %s', profile))
   device:try_update_metadata({profile = profile})
-  device:set_field('profileSynced', true, {persist = true})
+  device:set_field('profileSynced', profile, {persist = true})
 
 end
 
@@ -177,22 +190,53 @@ end
 --                        DURATION / COUNT STATE
 -----------------------------------------------------------------------
 
+local function get_count(device)
+
+  return device:get_latest_state('counter', cap_count.ID, cap_count.count.NAME) or 0
+
+end
+
+local function get_duration(device)
+
+  return device:get_latest_state('main', cap_duration.ID, cap_duration.duration.NAME) or 0
+
+end
+
+-- Dashboard text for the 'count' and 'both' dashboard modes. The count is shown with
+-- COUNT_UNIT; 'both' prefixes the duration and its scale. Skipped silently when the
+-- current profile has no dashtext capability (duration mode, or profile not yet switched).
+local function update_dashtext(device, duration, count)
+
+  if not device:supports_capability_by_id(cap_dashtext.ID, 'main') then
+    return
+  end
+
+  local mode = device.preferences.dashboard
+  if mode ~= 'count' and mode ~= 'both' then
+    return
+  end
+
+  local text = string.format('%d %s', count or get_count(device), COUNT_UNIT)
+  if mode == 'both' then
+    text = string.format('%d %s / %s', duration or get_duration(device), get_scale(device), text)
+  end
+
+  device:emit_component_event(device.profile.components.main, cap_dashtext.text(text))
+
+end
+
 local function _update_duration(device, duration)
 
   device:emit_component_event(device.profile.components.main,
                               cap_duration.duration({value = duration, unit = get_scale(device)}))
+  update_dashtext(device, duration, nil)
 
 end
 
 local function _update_count(device, count)
 
   device:emit_component_event(device.profile.components.counter, cap_count.count(count))
-
-end
-
-local function get_count(device)
-
-  return device:get_latest_state('counter', cap_count.ID, cap_count.count.NAME) or 0
+  update_dashtext(device, nil, count)
 
 end
 
@@ -532,15 +576,7 @@ local function handler_driverchanged(driver, device, event, args)
 end
 
 
-local function handler_infochanged (driver, device, event, args)
-
-  log.debug ('Info changed handler invoked')
-
-  local oldprefs = args.old_st_store and args.old_st_store.preferences
-  if not oldprefs then
-    return
-  end
-  local prefs = device.preferences
+local function handle_pref_changes(device, oldprefs, prefs)
 
   -- Each preference is checked on its own; several may change at once.
 
@@ -577,8 +613,26 @@ local function handler_infochanged (driver, device, event, args)
 
   if oldprefs.dashboard ~= prefs.dashboard then
     log.info ('Dashboard preference changed to: ', prefs.dashboard)
-    device:try_update_metadata({profile = desired_profile(device)})
+    sync_profile(device)
   end
+
+end
+
+
+local function handler_infochanged (driver, device, event, args)
+
+  log.debug ('Info changed handler invoked')
+
+  local oldprefs = args.old_st_store and args.old_st_store.preferences
+  local prefs = device.preferences
+
+  if oldprefs then
+    handle_pref_changes(device, oldprefs, prefs)
+  end
+
+  -- Also fires once a profile switch has landed; the dashboard text can only be
+  -- emitted when a profile with the dashtext capability is active.
+  update_dashtext(device, nil, nil)
 
 end
 
@@ -650,7 +704,7 @@ thisDriver = Driver("thisDriver", {
   }
 })
 
-log.info ('Edge Counter-utility Device Version 0.8')
+log.info ('Edge Counter-utility Device Version 0.9')
 
 
 thisDriver:run()

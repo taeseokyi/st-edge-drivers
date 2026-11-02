@@ -44,7 +44,11 @@ A hidden contact sensor is included in the device but not displayed on the devic
 The amount added (or subtracted) each time the counter is incremented or decremented, whether by the add/subtract buttons, by an automation, or by the switch/counter linkage.  Minimum 1, default 1.  (Added 2026-11-01 to match the setting that exists on devices migrated from the Edge Counter Utility V1.1 driver.)
 
 ##### Dashboard State & Control
-As a default, the dashboard tile for this device includes a button to control the switch, as well as the duration value including the selected units (seconds, minutes, etc.) However if the device is going to be used primarily for counting rather than switch duration tracking, this device Setting allows you to change the dashboard view to be a button for incrementing the counter, plus the current count value.
+As a default, the dashboard tile for this device includes a button to control the switch, as well as the duration value including the selected units (seconds, minutes, etc.)  Two more options are available (added 2026-11-02):
+* **Count**: the tile shows the current count with the unit "회" (e.g. `14 회`), plus a button for incrementing the counter.
+* **Duration & Count**: the tile shows both values on one line, duration first (e.g. `3 hours / 14 회`), plus the switch and increment buttons.
+
+The count and combined texts are published through the custom capability `cleverflower44023.dashtext` (attribute `text`, main component); it is dashboard-only and is not shown on the Controls screen.  Changing this setting switches the device profile (`edgeutil.v1d`, `edgeutil_count.v1d`, `edgeutil_both.v1d`); the tile may take a moment to update after the change.
 
 ### Device Controls Screen
 

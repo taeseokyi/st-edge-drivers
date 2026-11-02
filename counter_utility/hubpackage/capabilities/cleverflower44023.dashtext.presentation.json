@@ -1,0 +1,25 @@
+{
+    "dashboard": {
+        "states": [
+            {
+                "label": "{{text.value}}"
+            }
+        ],
+        "actions": []
+    },
+    "detailView": [
+        {
+            "label": "Dashboard",
+            "displayType": "state",
+            "state": {
+                "label": "{{text.value}}"
+            }
+        }
+    ],
+    "automation": {
+        "conditions": [],
+        "actions": []
+    },
+    "id": "cleverflower44023.dashtext",
+    "version": 1
+}

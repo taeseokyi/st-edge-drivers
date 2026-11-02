@@ -17,9 +17,12 @@ Taeseok Yi 가 수정해 **Tsyi Channel** 로 배포한다.
 ### 원본 대비 변경 파일
 
 `counter_utility/`
-- `hubpackage/src/init.lua`: 프로필 이름을 `edgeutil.v1c`, `edgeutil_count.v1c` 로 변경.
-- `hubpackage/profiles/edgeutil_profile_V1c.yaml`, `edgeutil_profile_count_V1c.yaml`: 추가.
-- `hubpackage/counter.json`, `duration.json`: 추가 (device presentation).
+- `hubpackage/src/init.lua`: 프로필 이름을 `edgeutil*.v1d` 로 변경, 온라인 상태 보고·타이머 정렬·
+  resetnum/increment 추가, 대시보드 문자열(`cleverflower44023.dashtext`: 카운트 "회" 단위,
+  duration+count 동시 표시) 발행.
+- `hubpackage/profiles/edgeutil_profile{,_count,_both}_V1{c,d}.yaml`: 추가.
+- `hubpackage/capabilities/cleverflower44023.dashtext*.json`: 추가 (본인 네임스페이스 capability).
+- `hubpackage/counter.json`, `duration.json`, `both.json`: 추가 (device presentation).
 
 `webrequestor/`
 - `hubpackage/src/init.lua`: 대시보드 표시 방식(none/문자열/숫자/경도)별 프로필 분리, 숫자 추출 시

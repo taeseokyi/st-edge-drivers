@@ -5,8 +5,8 @@
   "dashboard": {
       "states": [
           {
-              "component": "counter",
-              "capability": "partyvoice23922.count",
+              "component": "main",
+              "capability": "cleverflower44023.dashtext",
               "version": 1,
               "idx": 0,
               "group": "main",

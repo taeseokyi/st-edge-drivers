@@ -1,0 +1,25 @@
+{
+    "id": "cleverflower44023.dashtext",
+    "version": 1,
+    "status": "proposed",
+    "name": "dashtext",
+    "ephemeral": false,
+    "attributes": {
+        "text": {
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false,
+                "required": [
+                    "value"
+                ]
+            },
+            "enumCommands": []
+        }
+    },
+    "commands": {}
+}
